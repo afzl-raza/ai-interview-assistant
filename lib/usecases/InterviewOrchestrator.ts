@@ -52,6 +52,14 @@ export class InterviewOrchestrator {
 
     session.addMessage("user", userMessage);
 
+    const guardedResponse = this.buildGuardedResponse(session, userMessage);
+    if (guardedResponse) {
+      onChunk(guardedResponse);
+      session.addMessage("assistant", guardedResponse);
+      sessionStore.set(session);
+      return { fullResponse: guardedResponse, phase: session.phase, scoreCard: session.scoreCard };
+    }
+
     const systemPrompt = promptBuilder.buildSystemPrompt(session);
     const fullResponse = await llmClient.streamCompletion(
       systemPrompt,
@@ -82,12 +90,12 @@ export class InterviewOrchestrator {
       }
     }
 
-    let scoreCard = null;
-    if (session.phase === "debrief") {
-      scoreCard = responseParser.extractScoreCard(fullResponse);
-      if (scoreCard) {
-        session.setScoreCard(scoreCard);
-      }
+    let scoreCard = responseParser.extractScoreCard(fullResponse);
+    if (scoreCard) {
+      session.setPhase("debrief");
+      session.setScoreCard(scoreCard);
+    } else if (session.phase === "debrief") {
+      scoreCard = session.scoreCard;
     }
 
     sessionStore.set(session);
@@ -105,5 +113,70 @@ export class InterviewOrchestrator {
     }
 
     return /\?/m.test(text);
+  }
+
+  private buildGuardedResponse(session: InterviewSession, userMessage: string): string | null {
+    const lower = userMessage.toLowerCase();
+
+    const outOfScopePatterns = [
+      /ignore all previous instructions/,
+      /\bstock tips?\b/,
+      /\binvestment advice\b/,
+      /\bcrypto\b/,
+      /\bblockchain\b/,
+      /\bpolitics?\b/,
+      /\bweather\b/,
+      /\bsports?\b/,
+      /\bbetting\b/,
+      /\bgambling\b/,
+    ];
+
+    const asksForAnswerPatterns = [
+      /\bgive me the best answer\b/,
+      /\bwrite the answer for me\b/,
+      /\banswer it for me\b/,
+      /\bjust tell me what to say\b/,
+      /\bcan i copy your answer\b/,
+    ];
+
+    const invalidInputPatterns = [
+      /^[a-z]{4,}$/i,
+      /^\W+$/,
+    ];
+
+    if (outOfScopePatterns.some((pattern) => pattern.test(lower))) {
+      if (session.phase === "interviewing") {
+        const role = session.suggestedRole || "interview";
+        return `I can't help with that here. Let's keep this focused on your ${role} mock interview. Can you answer the current interview question or share a relevant example from your experience?`;
+      }
+
+      if (session.phase === "role_suggested") {
+        return "I can't help with that here. Let's keep this focused on your mock interview. Which role would you like to continue with?";
+      }
+
+      return "I can't help with that here. Let's keep this focused on the mock interview. Which role would you like to practice for?";
+    }
+
+    if (asksForAnswerPatterns.some((pattern) => pattern.test(lower))) {
+      if (session.phase === "interviewing") {
+        return "I won't give you a full answer to copy. I can help you think it through. What would your own answer be in one or two sentences?";
+      }
+
+      return "I won't generate a copy-paste answer for the interview. Let's keep this focused on your own practice. Which role would you like to continue with?";
+    }
+
+    if (invalidInputPatterns.some((pattern) => pattern.test(userMessage.trim())) && userMessage.trim().length <= 12) {
+      if (session.phase === "interviewing") {
+        return "I didn't get a usable answer there. Can you respond in one short sentence related to the interview question?";
+      }
+
+      if (session.phase === "role_suggested") {
+        return "I didn't get a clear choice there. Which role would you like to continue with?";
+      }
+
+      return "I didn't get a clear input there. Which role would you like to practice for?";
+    }
+
+    return null;
   }
 }
