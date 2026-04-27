@@ -1,4 +1,5 @@
-﻿import { getOrchestrator } from "@/lib/container";
+import { getOrchestrator, sessionStore } from "@/lib/container";
+import { InterviewSession } from "@/lib/domain/InterviewSession";
 
 function sseData(payload: unknown) {
   return `data: ${JSON.stringify(payload)}\n\n`;
@@ -6,10 +7,23 @@ function sseData(payload: unknown) {
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, message } = await req.json();
+    const { sessionId, message, resumeText } = await req.json();
 
     if (!sessionId || !message) {
       return Response.json({ error: "sessionId and message required" }, { status: 400 });
+    }
+
+    if (typeof resumeText === "string" && resumeText.trim()) {
+      let session = sessionStore.get(sessionId);
+      if (!session) {
+        session = new InterviewSession(sessionId);
+      }
+
+      if (!session.hasResume) {
+        session.setResume(resumeText);
+      }
+
+      sessionStore.set(session);
     }
 
     const encoder = new TextEncoder();

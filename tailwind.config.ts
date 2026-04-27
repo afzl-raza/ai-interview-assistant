@@ -9,12 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       boxShadow: {
-        halo: "0 30px 80px rgba(0, 0, 0, 0.38)",
-        glow: "0 18px 60px rgba(67, 183, 255, 0.16)",
+        halo: "0 24px 60px rgba(92, 76, 151, 0.12)",
+        glow: "0 16px 40px rgba(118, 96, 196, 0.18)",
       },
       backgroundImage: {
         "hero-radial":
-          "radial-gradient(circle at top left, rgba(78, 176, 255, 0.18), transparent 28%), radial-gradient(circle at 85% 10%, rgba(86, 228, 179, 0.16), transparent 18%)",
+          "radial-gradient(circle at top left, rgba(134, 116, 214, 0.2), transparent 28%), radial-gradient(circle at 85% 10%, rgba(122, 189, 255, 0.12), transparent 18%)",
       },
       fontFamily: {
         sans: ["Manrope", "system-ui", "sans-serif"],

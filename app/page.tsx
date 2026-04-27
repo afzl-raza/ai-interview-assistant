@@ -10,6 +10,12 @@ type Message = {
   content: string;
 };
 
+type ResumeUploadResponse = {
+  success: boolean;
+  fileName: string;
+  resumeText: string;
+};
+
 type ScoreCard = {
   communication: number;
   depth: number;
@@ -36,25 +42,25 @@ function getPhaseMeta(phase: Phase) {
       return {
         label: "Role options ready",
         pct: 34,
-        accent: "from-sky-400 via-cyan-300 to-emerald-300",
+        accent: "from-violet-500 via-fuchsia-400 to-sky-400",
       };
     case "interviewing":
       return {
         label: "Interview live",
         pct: 72,
-        accent: "from-cyan-400 via-sky-300 to-emerald-300",
+        accent: "from-indigo-500 via-violet-400 to-sky-400",
       };
     case "debrief":
       return {
         label: "Feedback ready",
         pct: 100,
-        accent: "from-amber-300 via-cyan-300 to-emerald-300",
+        accent: "from-fuchsia-500 via-violet-400 to-sky-400",
       };
     default:
       return {
         label: "Setup",
         pct: 10,
-        accent: "from-slate-400 via-sky-300 to-cyan-300",
+        accent: "from-violet-300 via-indigo-300 to-sky-300",
       };
   }
 }
@@ -75,11 +81,11 @@ function SidebarCard({
   return (
     <section
       className={cls(
-        "card-sheen soft-border surface-glow rounded-[28px] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-slate-400/20",
+        "paper-panel soft-border surface-glow rounded-[28px] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-violet-400/25",
         className
       )}
     >
-      <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-slate-400">{title}</h3>
+      <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-violet-600/70">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -143,7 +149,7 @@ export default function Home() {
     }
   }
 
-  async function sendMessage(userText: string) {
+  async function sendMessage(userText: string, options?: { resumeText?: string }) {
     const trimmed = userText.trim();
     if (!trimmed || isLoading) {
       return;
@@ -161,7 +167,11 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message: trimmed }),
+        body: JSON.stringify({
+          sessionId,
+          message: trimmed,
+          resumeText: options?.resumeText,
+        }),
       });
 
       if (!res.ok) {
@@ -269,10 +279,13 @@ export default function Home() {
         throw new Error(await readJsonError(res));
       }
 
+      const data = (await res.json()) as ResumeUploadResponse;
+
       setUploadedFile(file.name);
       setUploadStatus("done");
       await sendMessage(
-        `I've uploaded my resume (${file.name}). Please suggest a few matching roles and let me choose one for the interview.`
+        `I've uploaded my resume (${file.name}). Please suggest a few matching roles and let me choose one for the interview.`,
+        { resumeText: data.resumeText }
       );
     } catch (error) {
       setUploadStatus("error");
@@ -411,32 +424,32 @@ export default function Home() {
     : null;
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-hero-radial" />
+    <main className="relative min-h-screen overflow-hidden text-slate-900">
+      <div className="pointer-events-none absolute inset-0 bg-hero-radial opacity-90" />
 
-      <header className="sticky top-0 z-30 border-b border-white/8 bg-slate-950/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-violet-500/10 bg-[#f6f1ff]/88 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-6 px-5 py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="float-soft flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-gradient-to-br from-sky-300 via-cyan-300 to-emerald-300 text-lg font-extrabold text-slate-950 shadow-glow">
+            <div className="float-soft flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-violet-300/35 bg-gradient-to-br from-indigo-600 via-violet-500 to-fuchsia-500 text-lg font-extrabold text-white shadow-glow">
               AI
             </div>
             <div className="min-w-0">
-              <div className="font-serif text-[1.9rem] font-semibold leading-none tracking-[-0.03em] text-white">
+              <div className="font-serif text-[1.9rem] font-semibold leading-none tracking-[-0.03em] text-slate-900">
                 Alex Interview Partner
               </div>
-              <p className="mt-2 max-w-3xl truncate text-[0.8rem] uppercase tracking-[0.22em] text-slate-400 md:text-[0.84rem]">
+              <p className="mt-2 max-w-3xl truncate text-[0.8rem] uppercase tracking-[0.22em] text-violet-700/70 md:text-[0.84rem]">
                 Mock interviews for SWE, Sales, Retail, and Generalist roles, with optional resume context
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-4">
-            <div className="hidden min-w-[210px] rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 shadow-halo md:block">
-              <div className="mb-2 flex items-center justify-between text-[0.72rem] uppercase tracking-[0.18em] text-slate-400">
+            <div className="hidden min-w-[210px] rounded-2xl border border-violet-400/15 bg-white/70 px-4 py-3 shadow-halo md:block">
+              <div className="mb-2 flex items-center justify-between text-[0.72rem] uppercase tracking-[0.18em] text-violet-600/75">
                 <span>{phaseMeta.label}</span>
                 <span>{phaseMeta.pct}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/8">
+              <div className="h-2 overflow-hidden rounded-full bg-violet-200/70">
                 <div
                   className={cls("h-full rounded-full bg-gradient-to-r transition-all duration-500", phaseMeta.accent)}
                   style={{ width: `${phaseMeta.pct}%` }}
@@ -448,8 +461,8 @@ export default function Home() {
               className={cls(
                 "rounded-2xl border px-4 py-3 text-sm font-semibold tracking-[0.01em] transition duration-300",
                 voiceOn
-                  ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-100 shadow-glow hover:border-cyan-200/30 hover:bg-cyan-400/15"
-                  : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:bg-white/[0.06]"
+                  ? "border-violet-400/20 bg-violet-500 text-white shadow-glow hover:border-violet-400/30 hover:bg-violet-600"
+                  : "border-violet-300/20 bg-white/70 text-violet-900 hover:border-violet-400/30 hover:bg-white"
               )}
               onClick={() => setVoiceOn((current) => !current)}
             >
@@ -460,27 +473,27 @@ export default function Home() {
       </header>
 
       <div className="mx-auto grid min-h-[calc(100vh-88px)] max-w-[1680px] grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_336px]">
-        <section className="flex min-h-0 flex-col border-r border-white/6">
+        <section className="flex min-h-0 flex-col border-r border-violet-500/10">
           {!chatStarted ? (
             <div className="flex flex-1 items-center justify-center px-5 py-10 lg:px-8">
-              <div className="fade-up relative w-full max-w-5xl overflow-hidden rounded-[36px] soft-border card-sheen surface-glow">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(90,176,255,0.18),_transparent_28%),radial-gradient(circle_at_80%_10%,_rgba(101,219,182,0.14),_transparent_20%)]" />
+              <div className="fade-up node-outline relative w-full max-w-5xl overflow-hidden rounded-[36px] soft-border paper-panel surface-glow">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(146,124,214,0.16),_transparent_28%),radial-gradient(circle_at_80%_10%,_rgba(110,184,255,0.12),_transparent_20%)]" />
                 <div className="relative grid gap-10 px-7 py-8 md:px-10 md:py-10 xl:grid-cols-[1.2fr_0.9fr]">
                   <div className="max-w-2xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/8 px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.22em] text-cyan-200">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/25 bg-violet-100/90 px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.22em] text-violet-700">
                       Conversational interview simulator
                     </div>
-                    <h1 className="mt-6 max-w-[12ch] font-serif text-5xl font-semibold leading-[0.92] tracking-[-0.05em] text-white sm:text-6xl">
+                    <h1 className="mt-6 max-w-[12ch] font-serif text-5xl font-semibold leading-[0.92] tracking-[-0.05em] text-slate-900 sm:text-6xl">
                       Practice like the real interview starts in ten minutes.
                     </h1>
-                    <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
+                    <p className="mt-6 max-w-2xl text-base leading-8 text-slate-700 md:text-lg">
                       Alex helps you rehearse role-specific interviews with sharper follow-ups, cleaner feedback,
                       and optional resume context for personalized questions.
                     </p>
 
                     <div className="mt-8 flex flex-wrap gap-3">
                       <button
-                        className="rounded-2xl bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-glow transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(94,234,212,0.22)]"
+                        className="rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-500 to-fuchsia-500 px-5 py-3 text-sm font-bold text-white shadow-glow transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(110,84,204,0.26)]"
                         onClick={() =>
                           void sendMessage(
                             "I want to practice a mock interview. Help me choose between Software Engineer, Sales, Retail, or Generalist."
@@ -491,7 +504,7 @@ export default function Home() {
                         Start interview now
                       </button>
                       <button
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-slate-200 transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08]"
+                        className="rounded-2xl border border-violet-300/20 bg-white/85 px-5 py-3 text-sm font-semibold text-violet-900 transition duration-300 hover:-translate-y-0.5 hover:border-violet-400/35 hover:bg-white"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadStatus === "uploading"}
                       >
@@ -504,7 +517,7 @@ export default function Home() {
                         <button
                           key={role}
                           type="button"
-                          className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-slate-300 transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200/20 hover:bg-white/[0.08] hover:text-white"
+                          className="rounded-full border border-violet-300/20 bg-white/70 px-4 py-2 text-sm font-medium text-violet-900 transition duration-300 hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-white hover:text-slate-900"
                           onClick={() => void sendMessage(`I want to practice for a ${role} interview.`)}
                           disabled={isLoading}
                         >
@@ -515,18 +528,18 @@ export default function Home() {
                   </div>
 
                   <div className="grid gap-4">
-                    <div className="rounded-[28px] border border-white/10 bg-slate-950/30 p-6 backdrop-blur-sm">
-                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <div className="workflow-panel rounded-[28px] border border-violet-300/15 p-6 backdrop-blur-sm">
+                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-violet-100/75">
                         Optional resume upload
                       </div>
-                      <p className="mt-4 text-sm leading-7 text-slate-300">
+                      <p className="mt-4 text-sm leading-7 text-violet-50/92">
                         Add a PDF or TXT resume if you want Alex to suggest matching roles and anchor questions to
                         your real projects, skills, and experience.
                       </p>
 
                       <div className="mt-6 flex flex-wrap gap-3">
                         <button
-                          className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-slate-200 transition duration-300 hover:border-white/20 hover:bg-white/[0.08]"
+                          className="rounded-2xl border border-white/15 bg-white/12 px-4 py-3 text-sm font-semibold text-white transition duration-300 hover:border-white/25 hover:bg-white/18"
                           onClick={() => void sendMessage("I do not have a resume. Please help me choose a role for the mock interview.")}
                           disabled={isLoading}
                         >
@@ -559,11 +572,11 @@ export default function Home() {
                       )}
                     </div>
 
-                    <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-6">
-                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    <div className="rounded-[28px] border border-violet-300/20 bg-white/76 p-6 shadow-halo">
+                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-violet-600/70">
                         Product quality
                       </div>
-                      <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
+                      <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
                         <p>One-question interview rhythm with adaptive follow-ups.</p>
                         <p>Role-aware prompts for SWE, Sales, Retail, and Generalist practice.</p>
                         <p>Structured debrief with pressure-tested communication scoring.</p>
@@ -582,7 +595,7 @@ export default function Home() {
                     className={cls("fade-up flex gap-4", message.role === "user" && "justify-end")}
                   >
                     {message.role === "assistant" && (
-                      <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/15 bg-gradient-to-br from-sky-300 via-cyan-300 to-emerald-300 font-bold text-slate-950 shadow-glow">
+                      <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-300/25 bg-gradient-to-br from-indigo-600 via-violet-500 to-fuchsia-500 font-bold text-white shadow-glow">
                         A
                       </div>
                     )}
@@ -591,13 +604,13 @@ export default function Home() {
                       className={cls(
                         "max-w-[82%] rounded-[26px] px-5 py-4 shadow-halo transition duration-300",
                         message.role === "user"
-                          ? "border border-cyan-200/10 bg-gradient-to-br from-sky-400/85 via-cyan-300/80 to-emerald-300/80 text-slate-950"
-                          : "soft-border card-sheen text-slate-100"
+                          ? "border border-violet-300/20 bg-gradient-to-br from-indigo-600 via-violet-500 to-fuchsia-500 text-white"
+                          : "paper-panel soft-border text-slate-900"
                       )}
                     >
                       <div className="whitespace-pre-wrap text-[1.02rem] leading-8 tracking-[-0.01em]">
                         {message.content || (
-                          <span className="inline-flex items-center gap-1.5 text-slate-400">
+                          <span className="inline-flex items-center gap-1.5 text-violet-400">
                             <span
                               className="h-2 w-2 rounded-full bg-white/50"
                               style={{ animation: "pulse-dot 1s infinite ease-in-out" }}
@@ -619,19 +632,19 @@ export default function Home() {
 
                 {isThinking && (
                   <div className="fade-up flex gap-4">
-                    <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/15 bg-gradient-to-br from-sky-300 via-cyan-300 to-emerald-300 font-bold text-slate-950 shadow-glow">
+                    <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-violet-300/25 bg-gradient-to-br from-indigo-600 via-violet-500 to-fuchsia-500 font-bold text-white shadow-glow">
                       A
                     </div>
-                    <div className="soft-border card-sheen max-w-[420px] rounded-[26px] px-5 py-4 shadow-halo">
+                    <div className="paper-panel soft-border max-w-[420px] rounded-[26px] px-5 py-4 shadow-halo">
                       <div className="flex items-center gap-2">
                         {[0, 0.12, 0.24].map((delay) => (
                           <span
                             key={delay}
-                            className="h-2.5 w-2.5 rounded-full bg-white/60"
+                            className="h-2.5 w-2.5 rounded-full bg-violet-400/80"
                             style={{ animation: `pulse-dot 1s ${delay}s infinite ease-in-out` }}
                           />
                         ))}
-                        <span className="ml-2 text-sm uppercase tracking-[0.18em] text-slate-400">Alex is thinking</span>
+                        <span className="ml-2 text-sm uppercase tracking-[0.18em] text-violet-600/75">Alex is thinking</span>
                       </div>
                     </div>
                   </div>
@@ -640,8 +653,8 @@ export default function Home() {
                 <div ref={bottomRef} />
               </div>
 
-              <div className="border-t border-white/6 bg-slate-950/35 px-5 py-5 backdrop-blur-xl lg:px-8">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-[0.78rem] uppercase tracking-[0.18em] text-slate-500">
+              <div className="border-t border-violet-500/10 bg-white/35 px-5 py-5 backdrop-blur-xl lg:px-8">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-[0.78rem] uppercase tracking-[0.18em] text-violet-600/70">
                   <span>{uploadedFile ? `Resume loaded: ${uploadedFile}` : "No resume attached"}</span>
                   <span>
                     {phase === "role_suggested"
@@ -653,12 +666,12 @@ export default function Home() {
                 </div>
 
                 {micStatusMessage && (
-                  <div className="mb-3 rounded-2xl border border-cyan-300/12 bg-cyan-300/8 px-4 py-3 text-sm text-cyan-100">
+                  <div className="mb-3 rounded-2xl border border-violet-300/20 bg-violet-100/80 px-4 py-3 text-sm text-violet-800">
                     {micStatusMessage}
                   </div>
                 )}
 
-                <div className="card-sheen soft-border surface-glow rounded-[30px] p-3">
+                <div className="paper-panel soft-border surface-glow rounded-[30px] p-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
                     <textarea
                       value={input}
@@ -674,7 +687,7 @@ export default function Home() {
                           ? "Choose a role, like Software Engineer or Sales."
                           : "Type your answer here."
                       }
-                      className="min-h-[116px] flex-1 resize-none rounded-[22px] border border-transparent bg-transparent px-4 py-4 text-[1.02rem] leading-8 tracking-[-0.01em] text-slate-100 outline-none placeholder:text-slate-500"
+                      className="min-h-[116px] flex-1 resize-none rounded-[22px] border border-transparent bg-transparent px-4 py-4 text-[1.02rem] leading-8 tracking-[-0.01em] text-slate-900 outline-none placeholder:text-violet-500/65"
                     />
 
                     <div className="flex items-center justify-between gap-3 px-2 pb-2 lg:flex-col lg:items-stretch lg:justify-end">
@@ -682,8 +695,8 @@ export default function Home() {
                         className={cls(
                           "rounded-2xl border px-5 py-3 text-sm font-semibold transition duration-300",
                           isListening
-                            ? "border-rose-300/25 bg-rose-400/12 text-rose-100 shadow-[0_14px_40px_rgba(251,113,133,0.18)]"
-                            : "border-white/10 bg-white/[0.04] text-slate-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08]"
+                            ? "border-fuchsia-300/30 bg-fuchsia-500 text-white shadow-[0_14px_40px_rgba(177,87,255,0.18)]"
+                            : "border-violet-300/20 bg-white/80 text-violet-900 hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-white"
                         )}
                         onClick={toggleVoiceInput}
                         type="button"
@@ -692,7 +705,7 @@ export default function Home() {
                       </button>
 
                       <button
-                        className="rounded-2xl bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-glow transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(94,234,212,0.22)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
+                        className="rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-500 to-fuchsia-500 px-5 py-3 text-sm font-bold text-white shadow-glow transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(110,84,204,0.26)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-y-0"
                         onClick={handleSend}
                         disabled={!input.trim() || isLoading}
                         type="button"
@@ -709,7 +722,7 @@ export default function Home() {
 
         <aside className="flex flex-col gap-5 px-5 py-5 lg:px-5 lg:py-6">
           <SidebarCard title="System shape">
-            <p className="text-[0.98rem] leading-8 text-slate-300">
+            <p className="text-[0.98rem] leading-8 text-slate-700">
               Voice-forward interview practice with adaptive prompting, optional resume context, and a provider-flexible backend designed for stable testing and polished demos.
             </p>
           </SidebarCard>
@@ -717,19 +730,19 @@ export default function Home() {
           <SidebarCard title="Current phase">
             <div className="space-y-4">
               <div>
-                <div className="font-serif text-3xl font-semibold tracking-[-0.04em] text-white">{phaseMeta.label}</div>
-                <p className="mt-2 text-sm leading-7 text-slate-400">
+                <div className="font-serif text-3xl font-semibold tracking-[-0.04em] text-slate-900">{phaseMeta.label}</div>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
                   Alex adapts the interview state, follow-up pressure, and feedback depth as the session progresses.
                 </p>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/8">
+              <div className="h-2 overflow-hidden rounded-full bg-violet-200/70">
                 <div
                   className={cls("h-full rounded-full bg-gradient-to-r transition-all duration-500", phaseMeta.accent)}
                   style={{ width: `${phaseMeta.pct}%` }}
                 />
               </div>
               <button
-                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-200 transition duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08]"
+                className="w-full rounded-2xl border border-violet-300/20 bg-white/75 px-4 py-3 text-sm font-semibold text-violet-900 transition duration-300 hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-white"
                 onClick={resetInterview}
               >
                 Start new interview
@@ -740,16 +753,16 @@ export default function Home() {
           <SidebarCard title="Feedback" className="min-h-[280px]">
             {!scoreCard ? (
               <div className="space-y-4">
-                <p className="text-[0.98rem] leading-8 text-slate-300">
+                <p className="text-[0.98rem] leading-8 text-slate-700">
                   The scorecard appears when Alex finishes evaluating the main areas of the interview.
                 </p>
-                <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Scoring lens</p>
-                  <div className="mt-4 grid gap-2 text-sm text-slate-400">
+                <div className="rounded-[22px] border border-violet-300/18 bg-violet-50/65 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-600/70">Scoring lens</p>
+                  <div className="mt-4 grid gap-2 text-sm text-slate-600">
                     {Object.values(SCORE_LABELS).map((label) => (
                       <div key={label} className="flex items-center justify-between">
                         <span>{label}</span>
-                        <span className="text-slate-500">Pending</span>
+                        <span className="text-violet-500/70">Pending</span>
                       </div>
                     ))}
                   </div>
@@ -757,13 +770,13 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="rounded-[24px] border border-cyan-200/10 bg-gradient-to-br from-cyan-300/8 to-emerald-300/8 p-5">
-                  <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-400">Overall score</div>
+                <div className="rounded-[24px] border border-violet-300/18 bg-gradient-to-br from-violet-100/95 to-sky-50/95 p-5">
+                  <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-violet-600/70">Overall score</div>
                   <div className="mt-3 flex items-end gap-2">
-                    <span className="font-serif text-6xl font-semibold leading-none tracking-[-0.05em] text-white">
+                    <span className="font-serif text-6xl font-semibold leading-none tracking-[-0.05em] text-slate-900">
                       {averageScore}
                     </span>
-                    <span className="mb-1 text-lg text-slate-400">/10</span>
+                    <span className="mb-1 text-lg text-violet-600/70">/10</span>
                   </div>
                 </div>
 
@@ -771,12 +784,12 @@ export default function Home() {
                   {(Object.keys(SCORE_LABELS) as Array<keyof ScoreCard>).map((key) => (
                     <div key={key}>
                       <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="text-slate-300">{SCORE_LABELS[key]}</span>
-                        <span className="font-semibold text-white">{scoreCard[key]}/10</span>
+                        <span className="text-slate-700">{SCORE_LABELS[key]}</span>
+                        <span className="font-semibold text-slate-900">{scoreCard[key]}/10</span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-white/8">
+                      <div className="h-2 overflow-hidden rounded-full bg-violet-200/70">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300"
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-violet-500 to-sky-400"
                           style={{ width: `${scoreCard[key] * 10}%` }}
                         />
                       </div>

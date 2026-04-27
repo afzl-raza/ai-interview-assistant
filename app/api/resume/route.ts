@@ -11,7 +11,9 @@ export async function POST(req: Request) {
       return Response.json({ error: "resume and sessionId required" }, { status: 400 });
     }
 
-    if (!["application/pdf", "text/plain"].includes(file.type)) {
+    const normalizedType = normalizeResumeType(file);
+
+    if (!normalizedType) {
       return Response.json({ error: "Only PDF or TXT files are supported." }, { status: 400 });
     }
 
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const resumeText = await resumeParser.parse(buffer, file.type);
+    const resumeText = await resumeParser.parse(buffer, normalizedType, file.name);
 
     let session = sessionStore.get(sessionId);
     if (!session) {
@@ -30,9 +32,32 @@ export async function POST(req: Request) {
     session.setResume(resumeText);
     sessionStore.set(session);
 
-    return Response.json({ success: true, fileName: file.name });
+    return Response.json({ success: true, fileName: file.name, resumeText });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to process resume";
     return Response.json({ error: message }, { status: 500 });
   }
+}
+
+function normalizeResumeType(file: File): "application/pdf" | "text/plain" | null {
+  const fileType = file.type.toLowerCase().trim();
+  const fileName = file.name.toLowerCase().trim();
+
+  if (
+    fileType === "application/pdf" ||
+    fileType === "application/x-pdf" ||
+    fileName.endsWith(".pdf")
+  ) {
+    return "application/pdf";
+  }
+
+  if (
+    fileType === "text/plain" ||
+    fileType === "text/txt" ||
+    fileName.endsWith(".txt")
+  ) {
+    return "text/plain";
+  }
+
+  return null;
 }
